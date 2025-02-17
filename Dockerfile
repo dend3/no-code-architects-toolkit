@@ -2,7 +2,7 @@
 FROM --platform=linux/arm64 python:3.9-slim
 
 # Install system dependencies, build tools, and libraries
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -f --no-install-recommends \
     ca-certificates \
     gcc \
     g++ \

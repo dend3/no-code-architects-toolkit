@@ -1,38 +1,38 @@
 # Core web dependencies
-flask==2.0.1
-werkzeug==2.0.3  # Required for Flask 2.0.1
-gunicorn==20.1.0
-python-dotenv==0.19.0
-requests==2.26.0
-pyjwt==2.1.0
+flask
+werkzeug
+gunicorn
+python-dotenv
+requests
+pyjwt
 
 # Storage dependencies
-boto3>=1.26.0  # Updated for Config support
-botocore>=1.29.0  # Required by boto3
-google-cloud-storage==1.42.0
-minio==7.1.17
+boto3
+botocore
+google-cloud-storage
+minio
 
 # ML and transcription dependencies
-faster-whisper==0.10.0  # Optimized Whisper implementation
+faster-whisper
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.1.2+cpu  # CPU-optimized PyTorch
-torchaudio==2.1.2+cpu  # CPU-optimized
-torchvision==0.16.2+cpu  # CPU-optimized
-numpy==1.26.3  # Will be compiled with ARM optimizations
+torch
+torchaudio
+torchvision
+numpy
 
 # File handling and format dependencies
-srt==3.5.2
-python-magic==0.4.27
-jsonschema==4.17.3
-python-multipart==0.0.6
+srt
+python-magic
+jsonschema
+python-multipart
 
 # Queue and scheduling dependencies
-redis==4.6.0
-rq==1.15.1
-rq-scheduler==0.13.1
+redis
+rq
+rq-scheduler
 
 # Additional utilities
-click==8.0.4  # Required by Flask CLI
-itsdangerous==2.0.1  # Required by Flask
-jinja2==3.0.3  # Required by Flask
-markupsafe==2.0.1  # Required by Jinja2
+click
+itsdangerous
+jinja2
+markupsafe

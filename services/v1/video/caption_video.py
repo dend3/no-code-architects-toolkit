@@ -2,7 +2,7 @@ import os
 import ffmpeg
 import logging
 import subprocess
-import whisper
+from faster_whisper import WhisperModel
 from datetime import timedelta
 import srt
 import re
@@ -19,6 +19,11 @@ if not logger.hasHandlers():
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+
+# Initialize Whisper model
+model_size = "base"
+model = WhisperModel(model_size, device="cpu", compute_type="int8")
+logger.info(f"Loaded Whisper model: {model_size}")
 
 STORAGE_PATH = "/tmp/"
 
@@ -46,20 +51,38 @@ def rgb_to_ass_color(rgb_color):
     return "&H00FFFFFF"
 
 def generate_transcription(video_path, language='auto'):
+    """Generate transcription using faster-whisper"""
     try:
-        model = whisper.load_model("base")
-        transcription_options = {
-            'word_timestamps': True,
-            'verbose': True,
-        }
-        if language != 'auto':
-            transcription_options['language'] = language
-        result = model.transcribe(video_path, **transcription_options)
-        logger.info(f"Transcription generated successfully for video: {video_path}")
-        return result
+        # Transcribe the audio
+        segments, info = model.transcribe(video_path, language=language if language != 'auto' else None)
+        
+        # Convert segments to list for multiple iterations
+        segments_list = list(segments)
+        
+        if not segments_list:
+            logger.warning("No transcription segments generated")
+            return None
+            
+        logger.info(f"Detected language: {info.language} with probability {info.language_probability:.2f}")
+        
+        # Convert segments to SRT format
+        subs = []
+        for i, seg in enumerate(segments_list):
+            start_time = timedelta(seconds=float(seg.start))
+            end_time = timedelta(seconds=float(seg.end))
+            text = seg.text.strip()
+            
+            if text:  # Only add non-empty segments
+                sub = srt.Subtitle(index=i,
+                                 start=start_time,
+                                 end=end_time,
+                                 content=text)
+                subs.append(sub)
+        
+        return srt.compose(subs)
     except Exception as e:
         logger.error(f"Error in transcription: {str(e)}")
-        raise
+        return None
 
 def get_video_resolution(video_path):
     try:

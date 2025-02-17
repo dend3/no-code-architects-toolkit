@@ -178,6 +178,24 @@ USER appuser
 
 RUN python -c "import os; print(os.environ.get('WHISPER_CACHE_DIR')); import whisper; whisper.load_model('base')"
 
+# Set environment variables optimized for Neoverse-N1 (3c/3t)
+ENV OMP_NUM_THREADS=2 \
+    MKL_NUM_THREADS=2 \
+    NUMEXPR_NUM_THREADS=2 \
+    OPENBLAS_NUM_THREADS=2 \
+    VECLIB_MAXIMUM_THREADS=2 \
+    WHISPER_IMPLEMENTATION=FASTER_WHISPER \
+    GOTO_NUM_THREADS=2
+
+# Install optimized PyTorch and faster-whisper for ARM
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu \
+    && pip install --no-cache-dir faster-whisper \
+    && pip install --no-cache-dir numpy --no-binary numpy  # Compile numpy optimized for ARM
+
+# Add CPU optimization flags for ARM Neoverse-N1
+ENV CFLAGS="-O3 -march=armv8.2-a -mcpu=neoverse-n1" \
+    CXXFLAGS="-O3 -march=armv8.2-a -mcpu=neoverse-n1"
+
 # Copy the rest of the application code
 COPY . .
 

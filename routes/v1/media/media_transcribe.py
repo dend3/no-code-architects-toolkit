@@ -5,6 +5,7 @@ import os
 from services.v1.media.media_transcribe import process_transcribe_media
 from services.authentication import authenticate
 from services.cloud_storage import upload_file
+import json
 
 v1_media_transcribe_bp = Blueprint('v1_media_transcribe', __name__)
 logger = logging.getLogger(__name__)
@@ -44,44 +45,66 @@ def transcribe(job_id, data):
     logger.info(f"Job {job_id}: Received transcription request for {media_url}")
 
     try:
-        result = process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id)
+        result = process_transcribe_media(
+            media_url=media_url,
+            task=task,
+            include_text=include_text,
+            include_srt=include_srt,
+            include_segments=include_segments,
+            word_timestamps=word_timestamps,
+            response_type=response_type,
+            language=language,
+            job_id=job_id
+        )
         logger.info(f"Job {job_id}: Transcription process completed successfully")
 
-        # If the result is a file path, upload it using the unified upload_file() method
         if response_type == "direct":
-           
-            result_json = {
-                "text": result[0],
-                "srt": result[1],
-                "segments": result[2],
+            # Return the results directly
+            return {
+                "text": result["text"] if include_text else None,
+                "srt": result["srt"] if include_srt else None,
+                "segments": result["segments"] if include_segments else None,
+                "detected_language": result["detected_language"],
                 "text_url": None,
                 "srt_url": None,
                 "segments_url": None,
-            }
-
-            return result_json, "/v1/transcribe/media", 200
-
+            }, "/v1/transcribe/media", 200
         else:
+            # Upload results to cloud storage
+            text_url = None
+            srt_url = None
+            segments_url = None
 
-            cloud_urls = {
+            if include_text and result["text"]:
+                text_file = f"/tmp/{job_id}_text.txt"
+                with open(text_file, 'w') as f:
+                    f.write(result["text"])
+                text_url = upload_file(text_file)
+                os.remove(text_file)
+
+            if include_srt and result["srt"]:
+                srt_file = f"/tmp/{job_id}_subtitles.srt"
+                with open(srt_file, 'w') as f:
+                    f.write(result["srt"])
+                srt_url = upload_file(srt_file)
+                os.remove(srt_file)
+
+            if include_segments and result["segments"]:
+                segments_file = f"/tmp/{job_id}_segments.json"
+                with open(segments_file, 'w') as f:
+                    json.dump(result["segments"], f)
+                segments_url = upload_file(segments_file)
+                os.remove(segments_file)
+
+            return {
                 "text": None,
                 "srt": None,
                 "segments": None,
-                "text_url": upload_file(result[0]) if include_text is True else None,
-                "srt_url": upload_file(result[1]) if include_srt is True else None,
-                "segments_url": upload_file(result[2]) if include_segments is True else None,
-            }
-
-            if include_text is True:
-                os.remove(result[0])  # Remove the temporary file after uploading
-            
-            if include_srt is True:
-                os.remove(result[1])
-
-            if include_segments is True:
-                os.remove(result[2])
-            
-            return cloud_urls, "/v1/transcribe/media", 200
+                "detected_language": result["detected_language"],
+                "text_url": text_url,
+                "srt_url": srt_url,
+                "segments_url": segments_url,
+            }, "/v1/transcribe/media", 200
 
     except Exception as e:
         logger.error(f"Job {job_id}: Error during transcription process - {str(e)}")

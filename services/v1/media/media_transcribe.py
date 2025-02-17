@@ -72,12 +72,23 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
             srt_text = srt.compose(subtitles)
 
         if include_segments:
-            segments_json = [{
-                'start': seg.start,
-                'end': seg.end,
-                'text': seg.text,
-                'words': seg.words if word_timestamps else None
-            } for seg in segments_list]
+            segments_json = []
+            for seg in segments_list:
+                segment_data = {
+                    'start': seg.start,
+                    'end': seg.end,
+                    'text': seg.text
+                }
+                if word_timestamps and hasattr(seg, 'words') and seg.words:
+                    segment_data['words'] = [
+                        {
+                            'start': word.start,
+                            'end': word.end,
+                            'word': word.word
+                        }
+                        for word in seg.words
+                    ]
+                segments_json.append(segment_data)
 
         # Clean up
         try:
@@ -102,21 +113,17 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
                     f.write(srt_text)
             else:
                 srt_filename = None
-
+                
             if include_segments:
                 segments_filename = os.path.join(STORAGE_PATH, f"{job_id}.json")
                 with open(segments_filename, 'w') as f:
-                    f.write(str(segments_json))
+                    import json
+                    json.dump(segments_json, f, ensure_ascii=False, indent=2)
             else:
                 segments_filename = None
 
-            return text_filename, srt_filename, segments_filename 
+            return text_filename, srt_filename, segments_filename
 
     except Exception as e:
-        logger.error(f"{task.capitalize()} failed: {str(e)}")
-        # Clean up in case of error
-        try:
-            os.remove(input_filename)
-        except:
-            pass
+        logger.error(f"Error in {task}: {str(e)}")
         raise

@@ -1,10 +1,14 @@
 # Base image
-FROM python:3.9-slim
+FROM --platform=linux/arm64 python:3.9-slim
 
 # Install system dependencies, build tools, and libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    gcc \
+    g++ \
+    make \
     wget \
+    pkg-config \
     tar \
     xz-utils \
     fonts-liberation \
@@ -35,12 +39,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libzimg-dev \
     libwebp-dev \
     git \
-    pkg-config \
     autoconf \
     automake \
     libtool \
     libfribidi-dev \
     libharfbuzz-dev \
+    libsrt-dev \
+    libass-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install SRT from source (latest version using cmake)
@@ -105,9 +110,9 @@ RUN git clone https://github.com/libass/libass.git && \
 RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
     cd ffmpeg && \
     git checkout n7.0.2 && \
-    PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig" \
+    PKG_CONFIG_PATH="/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig" \
     CFLAGS="-I/usr/include/freetype2" \
-    LDFLAGS="-L/usr/lib/x86_64-linux-gnu" \
+    LDFLAGS="-L/usr/lib/aarch64-linux-gnu" \
     ./configure --prefix=/usr/local \
         --enable-gpl \
         --enable-pthreads \
@@ -134,7 +139,7 @@ RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
         --enable-libsrt \
         --enable-filter=drawtext \
         --extra-cflags="-I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include" \
-        --extra-ldflags="-L/usr/lib/x86_64-linux-gnu -lfreetype -lfontconfig" \
+        --extra-ldflags="-L/usr/lib/aarch64-linux-gnu -lfreetype -lfontconfig" \
         --enable-gnutls \
     && make -j$(nproc) && \
     make install && \

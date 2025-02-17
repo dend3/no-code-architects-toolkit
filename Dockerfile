@@ -21,6 +21,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     fonts-dejavu \
     fonts-noto \
+    fonts-freefont-ttf \
+    && fc-cache -f \
     && rm -rf /var/lib/apt/lists/*
 
 # Set work directory

@@ -12,29 +12,39 @@ STORAGE_PATH = "/tmp/"
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Define font paths
-SYSTEM_FONTS_DIR = '/usr/share/fonts'
-CUSTOM_FONTS_DIR = '/usr/share/fonts/custom'
-
-# Create the FONT_PATHS dictionary by reading available fonts
+# Define font paths and create the FONT_PATHS dictionary
 FONT_PATHS = {}
 
 def find_system_fonts():
     """Find available fonts in the system"""
-    font_dirs = [SYSTEM_FONTS_DIR]
-    if os.path.exists(CUSTOM_FONTS_DIR):
-        font_dirs.append(CUSTOM_FONTS_DIR)
+    system_fonts = []
+    
+    # Check system font directories
+    font_dirs = [
+        '/usr/share/fonts',
+        '/usr/local/share/fonts',
+        '/usr/share/fonts/custom',
+    ]
     
     for fonts_dir in font_dirs:
         if os.path.exists(fonts_dir):
             for root, _, files in os.walk(fonts_dir):
                 for font_file in files:
                     if font_file.lower().endswith(('.ttf', '.otf')):
-                        font_name = os.path.splitext(font_file)[0]
-                        FONT_PATHS[font_name.lower()] = os.path.join(root, font_file)
+                        font_name = os.path.splitext(font_file)[0].lower()
+                        font_path = os.path.join(root, font_file)
+                        FONT_PATHS[font_name] = font_path
+                        system_fonts.append(font_name)
+    
+    if not FONT_PATHS:
+        logger.warning("No fonts found in system. Captioning may not work properly.")
+    else:
+        logger.info(f"Found {len(FONT_PATHS)} fonts")
+    
+    return system_fonts
 
-find_system_fonts()
-logger.info(f"Found {len(FONT_PATHS)} fonts")
+# Initialize fonts
+SYSTEM_FONTS = find_system_fonts()
 
 # Create a list of acceptable font names
 ACCEPTABLE_FONTS = list(FONT_PATHS.keys())

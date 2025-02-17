@@ -1,5 +1,6 @@
 import os
 import boto3
+from botocore.config import Config
 import logging
 from urllib.parse import urlparse
 
@@ -40,37 +41,47 @@ def upload_to_s3(file_path, s3_url, access_key, secret_key, region=None):
     Returns:
         str: URL of the uploaded file
     """
-    # Parse the S3 URL into bucket and endpoint
-    bucket_name, endpoint_url = parse_s3_url(s3_url)
-    
-    session = boto3.Session(
-        aws_access_key_id=access_key,
-        aws_secret_access_key=secret_key,
-        region_name=region
-    )
-    
-    # Configure S3 client with MinIO compatibility
-    client = session.client('s3',
-                          endpoint_url=endpoint_url,
-                          config=boto3.Config(
-                              s3={'addressing_style': 'path'},
-                              signature_version='s3v4'
-                          ))
-
     try:
-        # Upload the file to the specified bucket
-        with open(file_path, 'rb') as data:
-            client.upload_fileobj(
-                data, 
-                bucket_name, 
-                os.path.basename(file_path),
-                ExtraArgs={'ACL': 'public-read'}
-            )
-
-        # Construct the file URL
-        file_url = f"{endpoint_url}/{bucket_name}/{os.path.basename(file_path)}"
-        logger.info(f"File uploaded successfully to: {file_url}")
-        return file_url
+        # Parse the S3 URL into bucket and endpoint
+        bucket_name, endpoint_url = parse_s3_url(s3_url)
+        
+        # Configure S3 client with retries and timeouts
+        config = Config(
+            retries=dict(
+                max_attempts=3
+            ),
+            connect_timeout=5,
+            read_timeout=10,
+            signature_version='s3v4'
+        )
+        
+        session = boto3.Session(
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            region_name=region if region else None
+        )
+        
+        s3_client = session.client(
+            's3',
+            endpoint_url=endpoint_url,
+            config=config,
+            verify=False  # For self-signed certs in MinIO
+        )
+        
+        # Get the filename from the path
+        file_name = os.path.basename(file_path)
+        
+        # Upload the file
+        logger.info(f"Uploading {file_path} to {endpoint_url}/{bucket_name}/{file_name}")
+        s3_client.upload_file(
+            Filename=file_path,
+            Bucket=bucket_name,
+            Key=file_name
+        )
+        
+        # Return the URL to the uploaded file
+        return f"{endpoint_url}/{bucket_name}/{file_name}"
+        
     except Exception as e:
-        logger.error(f"Error uploading file to MinIO/S3: {e}")
+        logger.error(f"Error uploading to S3: {str(e)}")
         raise

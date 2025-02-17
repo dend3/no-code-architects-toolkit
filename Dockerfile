@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     pkg-config \
     git \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Set work directory

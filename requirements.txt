@@ -25,6 +25,7 @@ srt
 python-magic
 jsonschema
 python-multipart
+ffmpeg-python
 
 # Queue and scheduling dependencies
 redis

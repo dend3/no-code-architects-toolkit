@@ -19,6 +19,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
     git \
     ffmpeg \
+    fonts-dejavu \
+    fonts-noto \
     && rm -rf /var/lib/apt/lists/*
 
 # Set work directory

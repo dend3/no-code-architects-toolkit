@@ -12,16 +12,29 @@ STORAGE_PATH = "/tmp/"
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Define the path to the fonts directory
-FONTS_DIR = '/usr/share/fonts/custom'
+# Define font paths
+SYSTEM_FONTS_DIR = '/usr/share/fonts'
+CUSTOM_FONTS_DIR = '/usr/share/fonts/custom'
 
-# Create the FONT_PATHS dictionary by reading the fonts directory
+# Create the FONT_PATHS dictionary by reading available fonts
 FONT_PATHS = {}
-for font_file in os.listdir(FONTS_DIR):
-    if font_file.endswith('.ttf') or font_file.endswith('.TTF'):
-        font_name = os.path.splitext(font_file)[0]
-        FONT_PATHS[font_name] = os.path.join(FONTS_DIR, font_file)
-# logger.info(f"Available fonts: {FONT_PATHS}")
+
+def find_system_fonts():
+    """Find available fonts in the system"""
+    font_dirs = [SYSTEM_FONTS_DIR]
+    if os.path.exists(CUSTOM_FONTS_DIR):
+        font_dirs.append(CUSTOM_FONTS_DIR)
+    
+    for fonts_dir in font_dirs:
+        if os.path.exists(fonts_dir):
+            for root, _, files in os.walk(fonts_dir):
+                for font_file in files:
+                    if font_file.lower().endswith(('.ttf', '.otf')):
+                        font_name = os.path.splitext(font_file)[0]
+                        FONT_PATHS[font_name.lower()] = os.path.join(root, font_file)
+
+find_system_fonts()
+logger.info(f"Found {len(FONT_PATHS)} fonts")
 
 # Create a list of acceptable font names
 ACCEPTABLE_FONTS = list(FONT_PATHS.keys())
@@ -136,12 +149,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         logger.info(f"Job {job_id}: Output path set to {output_path}")
 
         # Ensure font_name is converted to the full font path
-        font_name = options.get('font_name', 'Arial')
+        font_name = options.get('font_name', 'Arial').lower()
         if font_name in FONT_PATHS:
             selected_font = FONT_PATHS[font_name]
             logger.info(f"Job {job_id}: Font path set to {selected_font}")
         else:
-            selected_font = FONT_PATHS.get('Arial')
+            selected_font = FONT_PATHS.get('arial')
             logger.warning(f"Job {job_id}: Font {font_name} not found. Using default font Arial.")
 
         # For ASS subtitles, we should avoid overriding styles

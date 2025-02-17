@@ -2,13 +2,9 @@
 FROM --platform=linux/arm64 python:3.9-slim
 
 # Install system dependencies, build tools, and libraries
-RUN apt-get update && apt-get install -f --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    gcc \
-    g++ \
-    make \
     wget \
-    pkg-config \
     tar \
     xz-utils \
     fonts-liberation \
@@ -39,13 +35,12 @@ RUN apt-get update && apt-get install -f --no-install-recommends \
     libzimg-dev \
     libwebp-dev \
     git \
+    pkg-config \
     autoconf \
     automake \
     libtool \
     libfribidi-dev \
     libharfbuzz-dev \
-    libsrt-dev \
-    libass-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install SRT from source (latest version using cmake)

@@ -1,4 +1,4 @@
-# Core web dependencies
+# Web framework and utilities
 flask
 werkzeug
 gunicorn
@@ -6,13 +6,17 @@ python-dotenv
 requests
 pyjwt
 
-# Storage dependencies
+# Cloud storage and services
 boto3
 botocore
 google-cloud-storage
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
 minio
 
-# ML and transcription dependencies
+# ML and transcription
 faster-whisper
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch
@@ -20,20 +24,31 @@ torchaudio
 torchvision
 numpy
 
-# File handling and format dependencies
+# File handling and formats
 srt
 python-magic
 jsonschema
 python-multipart
 ffmpeg-python
 
-# Queue and scheduling dependencies
+# Queue and scheduling
 redis
 rq
 rq-scheduler
+
+# System utilities
+psutil
 
 # Additional utilities
 click
 itsdangerous
 jinja2
 markupsafe
+
+# Testing and development
+pytest
+pytest-cov
+pytest-mock
+flake8
+black
+isort

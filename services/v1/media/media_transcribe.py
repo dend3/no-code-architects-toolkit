@@ -5,6 +5,7 @@ import srt
 from datetime import timedelta
 from services.file_management import download_file
 import logging
+import json
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -46,15 +47,18 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
         logger.info(f"Generated {task} output with language: {info.language}")
 
         # Process results
-        text = None
-        srt_text = None
-        segments_json = []
+        result = {
+            "text": None,
+            "srt": None,
+            "segments": None,
+            "detected_language": info.language
+        }
 
         # Convert segments to list for processing
         segments_list = list(segments)
 
         if include_text:
-            text = " ".join([seg.text for seg in segments_list])
+            result["text"] = " ".join([seg.text for seg in segments_list])
 
         if include_srt:
             # Create SRT subtitles
@@ -69,7 +73,7 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
                     content=segment.text.strip()
                 )
                 subtitles.append(subtitle)
-            srt_text = srt.compose(subtitles)
+            result["srt"] = srt.compose(subtitles)
 
         if include_segments:
             segments_json = []
@@ -89,6 +93,7 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
                         for word in seg.words
                     ]
                 segments_json.append(segment_data)
+            result["segments"] = segments_json
 
         # Clean up
         try:
@@ -98,31 +103,30 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
             logger.warning(f"Failed to clean up temporary file {input_filename}: {e}")
 
         if response_type == "direct":
-            return text, srt_text, segments_json
+            return result
         else:
-            if include_text:
+            output_files = {}
+            
+            if include_text and result["text"]:
                 text_filename = os.path.join(STORAGE_PATH, f"{job_id}.txt")
                 with open(text_filename, 'w') as f:
-                    f.write(text)
-            else:
-                text_filename = None
+                    f.write(result["text"])
+                output_files["text"] = text_filename
             
-            if include_srt:
+            if include_srt and result["srt"]:
                 srt_filename = os.path.join(STORAGE_PATH, f"{job_id}.srt")
                 with open(srt_filename, 'w') as f:
-                    f.write(srt_text)
-            else:
-                srt_filename = None
+                    f.write(result["srt"])
+                output_files["srt"] = srt_filename
                 
-            if include_segments:
+            if include_segments and result["segments"]:
                 segments_filename = os.path.join(STORAGE_PATH, f"{job_id}.json")
                 with open(segments_filename, 'w') as f:
-                    import json
-                    json.dump(segments_json, f, ensure_ascii=False, indent=2)
-            else:
-                segments_filename = None
+                    json.dump(result["segments"], f, ensure_ascii=False, indent=2)
+                output_files["segments"] = segments_filename
 
-            return text_filename, srt_filename, segments_filename
+            result["output_files"] = output_files
+            return result
 
     except Exception as e:
         logger.error(f"Error in {task}: {str(e)}")

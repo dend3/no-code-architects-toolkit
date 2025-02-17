@@ -61,9 +61,9 @@ def transcribe(job_id, data):
         if response_type == "direct":
             # Return the results directly
             return {
-                "text": result["text"] if include_text else None,
-                "srt": result["srt"] if include_srt else None,
-                "segments": result["segments"] if include_segments else None,
+                "text": result["text"],
+                "srt": result["srt"],
+                "segments": result["segments"],
                 "detected_language": result["detected_language"],
                 "text_url": None,
                 "srt_url": None,
@@ -75,26 +75,18 @@ def transcribe(job_id, data):
             srt_url = None
             segments_url = None
 
-            if include_text and result["text"]:
-                text_file = f"/tmp/{job_id}_text.txt"
-                with open(text_file, 'w') as f:
-                    f.write(result["text"])
-                text_url = upload_file(text_file)
-                os.remove(text_file)
+            if "output_files" in result:
+                if "text" in result["output_files"]:
+                    text_url = upload_file(result["output_files"]["text"])
+                    os.remove(result["output_files"]["text"])
 
-            if include_srt and result["srt"]:
-                srt_file = f"/tmp/{job_id}_subtitles.srt"
-                with open(srt_file, 'w') as f:
-                    f.write(result["srt"])
-                srt_url = upload_file(srt_file)
-                os.remove(srt_file)
+                if "srt" in result["output_files"]:
+                    srt_url = upload_file(result["output_files"]["srt"])
+                    os.remove(result["output_files"]["srt"])
 
-            if include_segments and result["segments"]:
-                segments_file = f"/tmp/{job_id}_segments.json"
-                with open(segments_file, 'w') as f:
-                    json.dump(result["segments"], f)
-                segments_url = upload_file(segments_file)
-                os.remove(segments_file)
+                if "segments" in result["output_files"]:
+                    segments_url = upload_file(result["output_files"]["segments"])
+                    os.remove(result["output_files"]["segments"])
 
             return {
                 "text": None,
